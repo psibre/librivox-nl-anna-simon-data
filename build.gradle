@@ -7,7 +7,12 @@ buildscript {
     }
 }
 
+plugins {
+    id "de.undercouch.download" version "3.0.0"
+}
+
 import org.yaml.snakeyaml.*
+import de.undercouch.gradle.tasks.download.Download
 
 task listUtterances {
     def yamlFile = file('utterances.yaml')
@@ -35,11 +40,18 @@ task listUtterances {
                 ]
                 start = end
             }
-            println chapter
             utterances << chapter
         }
         def options = new DumperOptions()
         options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
         yamlFile.text = new Yaml(options).dump(utterances)
     }
+}
+
+task download(type: Download) {
+    src(new Yaml().load(file('utterances.yaml').text).collect { chapter ->
+        "http://www.archive.org/download/nagelaten_bekentenis_0806_librivox/${chapter.filename}.mp3"
+    })
+    dest buildDir
+    overwrite false
 }
