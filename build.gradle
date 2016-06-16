@@ -52,6 +52,26 @@ task download(type: Download) {
     src(new Yaml().load(file('utterances.yaml').text).collect { chapter ->
         "http://www.archive.org/download/nagelaten_bekentenis_0806_librivox/${chapter.filename}.mp3"
     })
-    dest buildDir
+    dest "$buildDir/download"
     overwrite false
+}
+
+task splitAudio {
+    def wavDir = file("$buildDir/wav")
+    inputs.files download
+    outputs.dir wavDir
+    doFirst {
+        wavDir.mkdirs()
+    }
+    doLast {
+        new Yaml().load(file('utterances.yaml').text).eachWithIndex { chapter, c ->
+            def mp3File = file("$buildDir/${chapter.filename}.mp3")
+            chapter.utterances.eachWithIndex { utterance, u ->
+                def wavFile = file("$wavDir/${chapter.filename}_${(c + 1 as String).padLeft(2, '0')}_${(u + 1 as String).padLeft(3, '0')}.wav")
+                exec {
+                    commandLine 'sox', mp3File, wavFile, 'trim', utterance.start, "=$utterance.end", 'rate', 16000
+                }
+            }
+        }
+    }
 }
