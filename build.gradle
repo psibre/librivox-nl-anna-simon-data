@@ -1,0 +1,42 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'org.yaml:snakeyaml:1.16'
+    }
+}
+
+import org.yaml.snakeyaml.Yaml
+
+task listUtterances {
+    def yamlFile = file('utterances.yaml')
+    def segmentationDir = file('segmentationdata')
+    inputs.files segmentationDir
+    doLast {
+        def utterances = []
+        segmentationDir.eachFile { trsFile ->
+            def parser = new XmlSlurper()
+            // from http://stackoverflow.com/a/30754000
+            parser.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
+            parser.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+            def xml = parser.parse(trsFile)
+            def chapter = [
+                    filename  : xml.'**'.find { it.name() == 'Trans' }.@audio_filename as String,
+                    utterances: []
+            ]
+            def start = 0
+            xml.'**'.findAll { it.name() == 'Sync' }.tail().each { sync ->
+                def end = Float.parseFloat(sync.@time as String)
+                chapter.utterances << [
+                        start: start,
+                        end  : end
+                ]
+                start = end
+            }
+            println chapter
+            utterances << chapter
+        }
+        yamlFile.text = new Yaml().dump(utterances)
+    }
+}
