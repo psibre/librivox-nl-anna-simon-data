@@ -7,7 +7,7 @@ buildscript {
     }
 }
 
-import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.*
 
 task listUtterances {
     def yamlFile = file('utterances.yaml')
@@ -37,6 +37,8 @@ task listUtterances {
             println chapter
             utterances << chapter
         }
-        yamlFile.text = new Yaml().dump(utterances)
+        def options = new DumperOptions()
+        options.defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
+        yamlFile.text = new Yaml(options).dump(utterances)
     }
 }
