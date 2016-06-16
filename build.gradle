@@ -14,8 +14,11 @@ plugins {
 import org.yaml.snakeyaml.*
 import de.undercouch.gradle.tasks.download.Download
 
+ext {
+    yamlFile = file('chapters.yaml')
+}
+
 task listUtterances {
-    def yamlFile = file('utterances.yaml')
     def segmentationDir = file('segmentationdata')
     inputs.files segmentationDir
     outputs.files yamlFile
@@ -49,7 +52,8 @@ task listUtterances {
 }
 
 task download(type: Download) {
-    src(new Yaml().load(file('utterances.yaml').text).collect { chapter ->
+    inputs.files yamlFile
+    src(new Yaml().load(yamlFile.text).collect { chapter ->
         "http://www.archive.org/download/nagelaten_bekentenis_0806_librivox/${chapter.filename}.mp3"
     })
     dest "$buildDir/download"
@@ -58,13 +62,13 @@ task download(type: Download) {
 
 task splitAudio {
     def wavDir = file("$buildDir/wav")
-    inputs.files download
+    inputs.files yamlFile, download
     outputs.dir wavDir
     doFirst {
         wavDir.mkdirs()
     }
     doLast {
-        new Yaml().load(file('utterances.yaml').text).eachWithIndex { chapter, c ->
+        new Yaml().load(yamlFile.text).eachWithIndex { chapter, c ->
             def mp3File = file("$buildDir/${chapter.filename}.mp3")
             chapter.utterances.eachWithIndex { utterance, u ->
                 def wavFile = file("$wavDir/${chapter.filename}_${(c + 1 as String).padLeft(2, '0')}_${(u + 1 as String).padLeft(3, '0')}.wav")
