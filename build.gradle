@@ -13,6 +13,7 @@ task listUtterances {
     def yamlFile = file('utterances.yaml')
     def segmentationDir = file('segmentationdata')
     inputs.files segmentationDir
+    outputs.files yamlFile
     doLast {
         def utterances = []
         segmentationDir.eachFile { trsFile ->
